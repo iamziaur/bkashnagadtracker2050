@@ -3,25 +3,199 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>লেনদেন হিসাব</title>
+  <title>Mobile Transaction App Bn</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
-    .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-    h1, h2 { text-align: center; }
-    label { display: block; margin-top: 10px; }
-    input, select { width: 100%; padding: 8px; margin-top: 5px; }
-    button { margin-top: 10px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #eee; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #e0f7fa, #f1f8e9);
+      color: #333;
+    }
+    header {
+      background: #00bcd4;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    main {
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #43a047;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #b2dfdb;
+    }
+    .summary {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #2e7d32;
+    }
   </style>
 </head>
 <body>
-<!-- content omitted for brevity in preview -->
-<script>
-// JavaScript content also omitted in preview
-</script>
+  <header>
+    <h1>মোবাইল লেনদেন অ্যাপ</h1>
+  </header>
+  <main>
+    <div class="card">
+      <label>নাম</label>
+      <input id="name" type="text">
+      <label>মোবাইল নম্বর</label>
+      <input id="mobile" type="text">
+      <label>পরিমাণ (৳)</label>
+      <input id="amount" type="number">
+      <label>ধরণ</label>
+      <select id="type">
+        <option value="sent">পাঠানো</option>
+        <option value="received">গ্রহণ</option>
+      </select>
+      <label>তারিখ</label>
+      <input id="date" type="date">
+      <label>ট্রানজেকশন নম্বর</label>
+      <input id="trxid" type="text">
+      <button onclick="addTransaction()">লেনদেন যোগ করুন</button>
+    </div>
+
+    <div class="card">
+      <label>শুরু তারিখ</label>
+      <input id="fromDate" type="date">
+      <label>শেষ তারিখ</label>
+      <input id="toDate" type="date">
+      <button onclick="filterTransactions()">ফিল্টার করুন</button>
+    </div>
+
+    <div class="summary" id="summary"></div>
+
+    <div class="card">
+      <table id="transactions">
+        <thead>
+          <tr>
+            <th>নাম</th>
+            <th>মোবাইল</th>
+            <th>পরিমাণ</th>
+            <th>ধরণ</th>
+            <th>তারিখ</th>
+            <th>ট্রানজেকশন নম্বর</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <button onclick="downloadCSV()">CSV ডাউনলোড</button>
+    <button onclick="downloadPDF()">PDF ডাউনলোড</button>
+  </main>
+  <script>
+    const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+    function saveTransactions() {
+      localStorage.setItem('transactions', JSON.stringify(transactions));
+    }
+    function addTransaction() {
+      const data = {
+        name: document.getElementById('name').value,
+        mobile: document.getElementById('mobile').value,
+        amount: parseFloat(document.getElementById('amount').value),
+        type: document.getElementById('type').value,
+        date: document.getElementById('date').value,
+        trxid: document.getElementById('trxid').value
+      };
+      transactions.push(data);
+      saveTransactions();
+      renderTable(transactions);
+    }
+    function renderTable(data) {
+      const tbody = document.querySelector('#transactions tbody');
+      tbody.innerHTML = '';
+      let sent = 0, received = 0;
+      data.forEach(t => {
+        const row = `<tr>
+          <td>${t.name}</td>
+          <td>${t.mobile}</td>
+          <td>${t.amount}</td>
+          <td>${t.type === 'sent' ? 'পাঠানো' : 'গ্রহণ'}</td>
+          <td>${t.date}</td>
+          <td>${t.trxid}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+        if (t.type === 'sent') sent += t.amount;
+        else received += t.amount;
+      });
+      document.getElementById('summary').textContent = `মোট পাঠানো: ৳${sent.toFixed(2)}, মোট গ্রহণ: ৳${received.toFixed(2)}`;
+    }
+    function filterTransactions() {
+      const from = document.getElementById('fromDate').value;
+      const to = document.getElementById('toDate').value;
+      const filtered = transactions.filter(t => (!from || t.date >= from) && (!to || t.date <= to));
+      renderTable(filtered);
+    }
+    function downloadCSV() {
+      let csv = 'নাম,মোবাইল,পরিমাণ,ধরণ,তারিখ,ট্রানজেকশন নম্বর\n';
+      transactions.forEach(t => {
+        csv += `${t.name},${t.mobile},${t.amount},${t.type === 'sent' ? 'পাঠানো' : 'গ্রহণ'},${t.date},${t.trxid}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'transactions.csv';
+      a.click();
+    }
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const rows = transactions.map(t => [t.name, t.mobile, t.amount, t.type === 'sent' ? 'পাঠানো' : 'গ্রহণ', t.date, t.trxid]);
+      doc.text('লেনদেন তালিকা', 10, 10);
+      doc.autoTable({ head: [['নাম', 'মোবাইল', 'পরিমাণ', 'ধরণ', 'তারিখ', 'ট্রানজেকশন নম্বর']], body: rows });
+      doc.save('transactions.pdf');
+    }
+    renderTable(transactions);
+  </script>
 </body>
 </html>
