@@ -1,0 +1,8 @@
+# Re-create the .nojekyll file after code execution state reset
+nojekyll_path = "/mnt/data/.nojekyll"
+
+# Create an empty .nojekyll file
+with open(nojekyll_path, "w") as f:
+    pass
+
+nojekyll_path
